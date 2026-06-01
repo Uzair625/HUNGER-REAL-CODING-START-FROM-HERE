@@ -33,8 +33,8 @@ class DefaultFirebaseOptions {
   );
 
   static const _android = FirebaseOptions(
-    apiKey: 'AIzaSyB8Xg3NHdbvo8Yl5BvTgSfh-yeM9_k1NR4',
-    appId: '1:850010452933:android:0000000000000000000000',
+    apiKey: 'AIzaSyCCbYWEWGolZ44nQHo-UYQ64CIMZjQCkDk',
+    appId: '1:850010452933:android:6153e4aecbe15f892051ac',
     messagingSenderId: '850010452933',
     projectId: 'hunger-point-910ef',
     storageBucket: 'hunger-point-910ef.firebasestorage.app',
