@@ -1,0 +1,71 @@
+name: hunger_point
+description: Hunger Point - Fast & Fresh Food Delivery
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Firebase
+  firebase_core: ^3.0.0
+  firebase_auth: ^5.0.0
+  cloud_firestore: ^5.0.0
+  firebase_storage: ^12.0.0
+  firebase_messaging: ^15.0.0
+
+  # State Management
+  get: ^4.6.6
+
+  # Local Storage
+  shared_preferences: ^2.2.0
+
+  # Utils
+  uuid: ^4.3.3
+  intl: ^0.19.0
+  url_launcher: ^6.2.0
+
+  # UI
+  cached_network_image: ^3.3.0
+  shimmer: ^3.0.0
+  google_fonts: ^6.2.1
+  image_picker: ^1.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/images/burgers/
+    - assets/images/pizza/
+    - assets/images/fried_chicken/
+    - assets/images/wings/
+    - assets/images/fries/
+    - assets/images/shawarma/
+    - assets/images/paratha_roll/
+    - assets/images/biryani/
+    - assets/images/chinese/
+    - assets/images/soup/
+    - assets/images/pasta/
+    - assets/images/fish_chips/
+    - assets/images/deals/
+    - assets/fonts/
+
+  # fonts: (Poppins .ttf files not yet added to assets/fonts/ — add them to re-enable)
+  #   - family: Poppins
+  #     fonts:
+  #       - asset: assets/fonts/Poppins-Regular.ttf
+  #       - asset: assets/fonts/Poppins-Medium.ttf
+  #         weight: 500
+  #       - asset: assets/fonts/Poppins-SemiBold.ttf
+  #         weight: 600
+  #       - asset: assets/fonts/Poppins-Bold.ttf
+  #         weight: 700
