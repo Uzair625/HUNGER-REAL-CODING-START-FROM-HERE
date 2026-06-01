@@ -36,6 +36,7 @@ class CartController extends GetxController {
 
   void removeItem(String id, {String? size}) {
     items.removeWhere((i) => i.item.id == id && i.selectedSize == size);
+    items.refresh();
   }
 
   void updateQty(String id, int qty, {String? size}) {

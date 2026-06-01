@@ -10,11 +10,6 @@ import 'controllers/menu_controller.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Register controllers permanently so they are never disposed on route changes
-  Get.put(AuthController(), permanent: true);
-  Get.put(CartController(), permanent: true);
-  Get.put(FoodMenuController(), permanent: true);
-
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -23,6 +18,11 @@ void main() async {
   } catch (e) {
     debugPrint('🔴 Firebase init failed: $e');
   }
+
+  // Register controllers after Firebase is initialized
+  Get.put(AuthController(), permanent: true);
+  Get.put(CartController(), permanent: true);
+  Get.put(FoodMenuController(), permanent: true);
 
   runApp(const HungerPointApp());
 }

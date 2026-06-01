@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "850010452933",
+    "project_id": "hunger-point-910ef",
+    "storage_bucket": "hunger-point-910ef.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:850010452933:android:6153e4aecbe15f892051ac",
+        "android_client_info": {
+          "package_name": "com.hungerpoint.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCCbYWEWGolZ44nQHo-UYQ64CIMZjQCkDk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

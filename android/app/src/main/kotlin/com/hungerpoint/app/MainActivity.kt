@@ -1,4 +1,4 @@
-package com.example.hunger_point
+package com.hungerpoint.app
 
 import io.flutter.embedding.android.FlutterActivity
 

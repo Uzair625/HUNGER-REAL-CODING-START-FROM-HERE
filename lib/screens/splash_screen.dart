@@ -29,12 +29,19 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
 
   Future<void> _navigate() async {
     await Future.delayed(const Duration(seconds: 2));
-    final auth = Get.find<AuthController>();
-    await auth.restoreSession();
-    if (auth.isLoggedIn) {
-      Get.offAllNamed(AppRoutes.home);
-    } else {
-      Get.offAllNamed(AppRoutes.auth);
+    if (!mounted) return;
+    try {
+      final auth = Get.find<AuthController>();
+      await auth.restoreSession();
+      if (!mounted) return;
+      if (auth.isLoggedIn) {
+        Get.offAllNamed(AppRoutes.home);
+      } else {
+        Get.offAllNamed(AppRoutes.auth);
+      }
+    } catch (e) {
+      debugPrint('🔴 Splash navigation error: $e');
+      if (mounted) Get.offAllNamed(AppRoutes.auth);
     }
   }
 
@@ -70,7 +77,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                   decoration: BoxDecoration(
                     color: AppColors.primary,
                     shape: BoxShape.circle,
-                    boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.4), blurRadius: 20, offset: const Offset(0,8))],
+                    boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.4), blurRadius: 20, offset: const Offset(0,8))],
                   ),
                   child: const Center(child: Text('🍔', style: TextStyle(fontSize: 56))),
                 ),

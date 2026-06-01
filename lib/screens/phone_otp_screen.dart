@@ -32,16 +32,21 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> {
     _timer?.cancel();
     setState(() => _secs = 60);
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (_secs > 0) setState(() => _secs--); else _timer?.cancel();
+      if (!mounted) { _timer?.cancel(); return; }
+      if (_secs > 0) {
+        setState(() => _secs--);
+      } else {
+        _timer?.cancel();
+      }
     });
   }
 
   String get _otp => _boxes.map((c) => c.text).join();
 
   void _onKey(int i, String v) {
-    if (v.isNotEmpty && i < 5) _nodes[i + 1].requestFocus();
-    else if (v.isEmpty && i > 0) _nodes[i - 1].requestFocus();
-    if (_otp.length == 6) _verify();
+    if (v.isNotEmpty && i < 5) { _nodes[i + 1].requestFocus(); }
+    else if (v.isEmpty && i > 0) { _nodes[i - 1].requestFocus(); }
+    if (_otp.length == 6) { _verify(); }
   }
 
   void _verify() => Get.find<AuthController>().verifyOtp(_otp, widget.phone);
