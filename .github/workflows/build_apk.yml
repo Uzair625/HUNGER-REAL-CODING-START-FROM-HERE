@@ -1,26 +1,53 @@
-name: Build Android APK + iOS IPA
+name: Hunger Point CI/CD
 
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
     inputs:
       build_type:
-        description: 'Build type (debug or release)'
+        description: 'Build type'
         required: false
         default: 'debug'
         type: choice
-        options:
-          - debug
-          - release
+        options: [debug, release]
+
+env:
+  FLUTTER_VERSION: '3.44.0'
 
 jobs:
-  # ── Android ──────────────────────────────────────────────────────────────────
-  build-android:
-    name: Android APK
+  # ── 1. Analyze & Test (gate — all builds wait for this) ──────────────────────
+  analyze:
+    name: Analyze & Test
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
 
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Inject google-services.json
+        run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
+
+      - run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos || true
+
+      - name: Run tests
+        run: flutter test
+
+  # ── 2. Android Customer APK ──────────────────────────────────────────────────
+  build-android:
+    name: Android APK (Customer)
+    runs-on: ubuntu-latest
+    needs: analyze
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -31,22 +58,22 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.44.0'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
 
-      - run: flutter pub get
+      - name: Inject google-services.json
+        run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
 
-      - name: Analyze (non-blocking)
-        run: flutter analyze --no-fatal-infos || true
+      - run: flutter pub get
 
       - name: Build Debug APK
         if: github.event.inputs.build_type != 'release'
-        run: flutter build apk --debug --build-number=${{ github.run_number }}
+        run: flutter build apk --debug --target lib/main.dart --build-number=${{ github.run_number }}
 
       - name: Build Release APK
         if: github.event.inputs.build_type == 'release'
-        run: flutter build apk --release --build-number=${{ github.run_number }}
+        run: flutter build apk --release --target lib/main.dart --build-number=${{ github.run_number }}
 
       - name: Get build date
         id: date
@@ -56,7 +83,7 @@ jobs:
         if: github.event.inputs.build_type != 'release'
         uses: actions/upload-artifact@v4
         with:
-          name: hunger-point-android-debug-${{ steps.date.outputs.date }}-build${{ github.run_number }}
+          name: customer-android-debug-${{ steps.date.outputs.date }}-b${{ github.run_number }}
           path: build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 14
 
@@ -64,31 +91,127 @@ jobs:
         if: github.event.inputs.build_type == 'release'
         uses: actions/upload-artifact@v4
         with:
-          name: hunger-point-android-release-${{ steps.date.outputs.date }}-build${{ github.run_number }}
+          name: customer-android-release-${{ steps.date.outputs.date }}-b${{ github.run_number }}
           path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 30
 
       - name: Build Summary
         run: |
-          echo "## Android Build ✅" >> $GITHUB_STEP_SUMMARY
+          echo "## Customer Android Build ✅" >> $GITHUB_STEP_SUMMARY
           echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
           echo "| Build # | ${{ github.run_number }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Type | ${{ github.event.inputs.build_type || 'debug' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Date | $(date +'%Y-%m-%d') |" >> $GITHUB_STEP_SUMMARY
 
-  # ── iOS ───────────────────────────────────────────────────────────────────────
+  # ── 3. Android Rider APK (skips until Day 3 — main_rider.dart created) ───────
+  build-rider:
+    name: Android APK (Rider)
+    runs-on: ubuntu-latest
+    needs: analyze
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Inject google-services.json
+        run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
+
+      - run: flutter pub get
+
+      - name: Build Rider APK
+        id: rider_build
+        run: |
+          if [ -f "lib/main_rider.dart" ]; then
+            flutter build apk --debug --target lib/main_rider.dart --build-number=${{ github.run_number }}
+            echo "built=true" >> $GITHUB_OUTPUT
+          else
+            echo "Rider app not yet created (Day 3) — skipping"
+            echo "built=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Get build date
+        id: date
+        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+
+      - name: Upload Rider APK
+        if: steps.rider_build.outputs.built == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: rider-android-debug-${{ steps.date.outputs.date }}-b${{ github.run_number }}
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 14
+
+  # ── 4. Android Owner APK (skips until Day 4 — main_owner.dart created) ───────
+  build-owner:
+    name: Android APK (Owner)
+    runs-on: ubuntu-latest
+    needs: analyze
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Inject google-services.json
+        run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
+
+      - run: flutter pub get
+
+      - name: Build Owner APK
+        id: owner_build
+        run: |
+          if [ -f "lib/main_owner.dart" ]; then
+            flutter build apk --debug --target lib/main_owner.dart --build-number=${{ github.run_number }}
+            echo "built=true" >> $GITHUB_OUTPUT
+          else
+            echo "Owner app not yet created (Day 4) — skipping"
+            echo "built=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Get build date
+        id: date
+        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+
+      - name: Upload Owner APK
+        if: steps.owner_build.outputs.built == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: owner-android-debug-${{ steps.date.outputs.date }}-b${{ github.run_number }}
+          path: build/app/outputs/flutter-apk/app-debug.apk
+          retention-days: 14
+
+  # ── 5. iOS IPA (unsigned — sideload via AltStore / Sideloadly) ───────────────
   build-ios:
     name: iOS IPA (unsigned)
     runs-on: macos-latest
+    needs: analyze
     timeout-minutes: 60
-
     steps:
       - uses: actions/checkout@v4
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.44.0'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
           cache: true
 
@@ -139,7 +262,7 @@ jobs:
             <key>UIViewControllerBasedStatusBarAppearance</key>
             <false/>
             <key>NSLocationWhenInUseUsageDescription</key>
-            <string>Hunger Point uses your location to auto-detect your delivery address and show nearby restaurants.</string>
+            <string>Hunger Point uses your location to auto-detect your delivery address.</string>
             <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
             <string>Hunger Point uses your location to track your order delivery in real time.</string>
             <key>NSPhotoLibraryUsageDescription</key>
@@ -172,13 +295,9 @@ jobs:
           echo "TRACK_WIDGET_CREATION=true"                                             >> ios/Flutter/Generated.xcconfig
           echo "TREE_SHAKE_ICONS=false"                                                 >> ios/Flutter/Generated.xcconfig
           echo "PACKAGE_CONFIG=.dart_tool/package_config.json"                         >> ios/Flutter/Generated.xcconfig
-          echo "--- Generated.xcconfig ---"
-          cat ios/Flutter/Generated.xcconfig
 
       - name: Install CocoaPods
-        run: |
-          cd ios
-          pod install --repo-update
+        run: cd ios && pod install --repo-update
         env:
           LANG: en_US.UTF-8
 
@@ -192,9 +311,7 @@ jobs:
             {} \;
 
       - name: Build iOS app (no codesign)
-        run: |
-          flutter build ios --debug --no-codesign \
-            --build-number=${{ github.run_number }}
+        run: flutter build ios --debug --no-codesign --build-number=${{ github.run_number }}
 
       - name: Package IPA
         run: |
@@ -210,7 +327,7 @@ jobs:
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
-          name: hunger-point-ios-debug-${{ steps.date.outputs.date }}-build${{ github.run_number }}
+          name: customer-ios-debug-${{ steps.date.outputs.date }}-b${{ github.run_number }}
           path: HungerPoint-iOS-debug.ipa
           retention-days: 14
 
@@ -224,3 +341,44 @@ jobs:
           echo "| Date | $(date +'%Y-%m-%d') |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "> Install via **AltStore** or **Sideloadly** using your Apple ID." >> $GITHUB_STEP_SUMMARY
+
+  # ── 6. GitHub Release (on version tags: git tag v1.0.0 && git push --tags) ───
+  release:
+    name: GitHub Release
+    runs-on: ubuntu-latest
+    needs: [build-android, build-ios]
+    if: startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
+          cache: true
+
+      - name: Inject google-services.json
+        run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
+
+      - run: flutter pub get
+
+      - name: Build Customer Release APK
+        run: flutter build apk --release --target lib/main.dart
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/app/outputs/flutter-apk/app-release.apk
+          name: Hunger Point ${{ github.ref_name }}
+          body: |
+            ## Hunger Point ${{ github.ref_name }}
+
+            Download the APK below and install on your Android device.
+            Enable "Install from unknown sources" if prompted.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
