@@ -1,13 +1,16 @@
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import '../controllers/auth_controller.dart';
+import '../controllers/location_controller.dart';
 import '../utils/colors.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({super.key});
-  @override State<ProfileSetupScreen> createState() => _ProfileSetupScreenState();
+  @override
+  State<ProfileSetupScreen> createState() => _ProfileSetupScreenState();
 }
 
 class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
@@ -19,6 +22,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   bool _saving = false;
 
   @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
   void dispose() {
     _nameCtrl.dispose();
     _emailCtrl.dispose();
@@ -27,11 +35,28 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   }
 
   Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final file = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
-    if (file == null) return;
-    final bytes = await file.readAsBytes();
-    setState(() => _avatarBytes = bytes);
+    try {
+      final picker = ImagePicker();
+      final file = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+      if (file == null) return;
+      final bytes = await file.readAsBytes();
+      setState(() => _avatarBytes = bytes);
+    } catch (_) {}
+  }
+
+  Future<void> _detectLocation() async {
+    final loc = Get.find<LocationController>();
+    final address = await loc.detectAddress();
+    if (address.isNotEmpty) {
+      _addressCtrl.text = address;
+    } else if (!kIsWeb) {
+      Get.snackbar('Location', 'Could not detect address. Enter manually.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.orange.shade700,
+        colorText: Colors.white,
+        margin: const EdgeInsets.all(16),
+      );
+    }
   }
 
   Future<void> _continue() async {
@@ -52,14 +77,19 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final auth     = Get.find<AuthController>();
+    final loc      = Get.find<LocationController>();
+    final phone    = auth.user.value?.phone ?? '';
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: const BackButton(color: AppColors.textPrimary),
-        title: const Text('Set Up Profile',
-          style: TextStyle(fontFamily: 'Poppins', fontSize: 17, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+        title: const Text('Set Up Your Profile',
+          style: TextStyle(fontFamily: 'Poppins', fontSize: 17,
+            fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
         centerTitle: true,
       ),
       body: SingleChildScrollView(
@@ -69,7 +99,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           child: Column(children: [
             const SizedBox(height: 24),
 
-            // Avatar picker
+            // ── Avatar picker ─────────────────────────────────────────
             GestureDetector(
               onTap: _saving ? null : _pickImage,
               child: Stack(children: [
@@ -78,7 +108,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: AppColors.primary,
-                    boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.35), blurRadius: 24, offset: const Offset(0, 8))],
+                    boxShadow: [BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.35),
+                      blurRadius: 24, offset: const Offset(0, 8))],
                     image: _avatarBytes != null
                       ? DecorationImage(image: MemoryImage(_avatarBytes!), fit: BoxFit.cover)
                       : null,
@@ -101,17 +133,26 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 ),
               ]),
             ),
-
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
             Text(
               _avatarBytes != null ? 'Photo selected ✓' : 'Tap to upload photo',
               style: TextStyle(
                 fontFamily: 'Poppins', fontSize: 12,
                 color: _avatarBytes != null ? AppColors.success : AppColors.textSecondary),
             ),
+            const SizedBox(height: 28),
 
-            const SizedBox(height: 32),
+            // ── Step label ────────────────────────────────────────────
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text('Your Details',
+                style: TextStyle(fontFamily: 'Poppins', fontSize: 13,
+                  fontWeight: FontWeight.w600, color: AppColors.textSecondary,
+                  letterSpacing: 0.5)),
+            ),
+            const SizedBox(height: 12),
 
+            // ── Full Name ─────────────────────────────────────────────
             _Field(
               controller: _nameCtrl,
               hint: 'Full Name',
@@ -120,6 +161,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             ),
             const SizedBox(height: 14),
 
+            // ── Email ─────────────────────────────────────────────────
             _Field(
               controller: _emailCtrl,
               hint: 'Email Address (optional)',
@@ -127,22 +169,107 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
               keyboard: TextInputType.emailAddress,
               validator: (v) {
                 if (v == null || v.trim().isEmpty) return null;
-                if (!v.contains('@')) return 'Enter a valid email';
+                if (!v.contains('@') || !v.contains('.')) return 'Enter a valid email';
                 return null;
               },
             ),
             const SizedBox(height: 14),
 
-            _Field(
-              controller: _addressCtrl,
-              hint: 'Delivery Address',
-              icon: Icons.location_on_rounded,
-              maxLines: 2,
-              validator: (v) => (v == null || v.trim().isEmpty) ? 'Address is required' : null,
+            // ── Phone (pre-filled, verified, read-only) ───────────────
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.divider),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              child: Row(children: [
+                const Icon(Icons.phone_rounded, color: AppColors.success, size: 20),
+                const SizedBox(width: 12),
+                Expanded(child: Text(
+                  phone.isNotEmpty ? phone : 'Phone not set',
+                  style: const TextStyle(fontFamily: 'Poppins', fontSize: 14, color: AppColors.textPrimary),
+                )),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.success.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.verified_rounded, size: 12, color: AppColors.success),
+                    SizedBox(width: 4),
+                    Text('Verified', style: TextStyle(
+                      fontFamily: 'Poppins', fontSize: 11,
+                      fontWeight: FontWeight.w600, color: AppColors.success)),
+                  ]),
+                ),
+              ]),
             ),
+            const SizedBox(height: 14),
+
+            // ── Delivery Address with detect button ───────────────────
+            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                const Expanded(
+                  child: Text('Delivery Address',
+                    style: TextStyle(fontFamily: 'Poppins', fontSize: 13,
+                      fontWeight: FontWeight.w500, color: AppColors.textSecondary)),
+                ),
+                // Detect location button
+                if (!kIsWeb)
+                  Obx(() => GestureDetector(
+                    onTap: loc.isDetecting.value || _saving ? null : _detectLocation,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: loc.isDetecting.value
+                          ? AppColors.primary.withValues(alpha: 0.08)
+                          : AppColors.primary,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        loc.isDetecting.value
+                          ? const SizedBox(width: 12, height: 12,
+                              child: CircularProgressIndicator(strokeWidth: 1.5, color: AppColors.primary))
+                          : const Icon(Icons.my_location_rounded, size: 13, color: Colors.white),
+                        const SizedBox(width: 5),
+                        Text(
+                          loc.isDetecting.value ? 'Detecting...' : 'Detect',
+                          style: TextStyle(
+                            fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.w600,
+                            color: loc.isDetecting.value ? AppColors.primary : Colors.white),
+                        ),
+                      ]),
+                    ),
+                  )),
+              ]),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _addressCtrl,
+                keyboardType: TextInputType.streetAddress,
+                maxLines: 3,
+                style: const TextStyle(fontFamily: 'Poppins', fontSize: 14, color: AppColors.textPrimary),
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Address is required' : null,
+                decoration: InputDecoration(
+                  hintText: 'Street, Area, City',
+                  hintStyle: const TextStyle(fontFamily: 'Poppins', fontSize: 14, color: AppColors.textLight),
+                  prefixIcon: const Icon(Icons.location_on_rounded, color: AppColors.primary, size: 20),
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.divider)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.divider)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
+                  errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.error)),
+                ),
+              ),
+            ]),
 
             const SizedBox(height: 36),
 
+            // ── Continue button ───────────────────────────────────────
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -166,13 +293,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             ),
 
             const SizedBox(height: 16),
-
             TextButton(
               onPressed: _saving ? null : () => Get.find<AuthController>().goHome(),
               child: const Text('Skip for now',
                 style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: AppColors.textSecondary)),
             ),
-
             const SizedBox(height: 32),
           ]),
         ),
@@ -181,12 +306,13 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   }
 }
 
+// ── Reusable form field ────────────────────────────────────────────────────────
+
 class _Field extends StatelessWidget {
   final TextEditingController controller;
   final String hint;
   final IconData icon;
   final TextInputType keyboard;
-  final int maxLines;
   final FormFieldValidator<String>? validator;
 
   const _Field({
@@ -194,7 +320,6 @@ class _Field extends StatelessWidget {
     required this.hint,
     required this.icon,
     this.keyboard = TextInputType.text,
-    this.maxLines = 1,
     this.validator,
   });
 
@@ -202,7 +327,6 @@ class _Field extends StatelessWidget {
   Widget build(BuildContext context) => TextFormField(
     controller: controller,
     keyboardType: keyboard,
-    maxLines: maxLines,
     validator: validator,
     style: const TextStyle(fontFamily: 'Poppins', fontSize: 14, color: AppColors.textPrimary),
     decoration: InputDecoration(

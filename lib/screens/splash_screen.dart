@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/auth_controller.dart';
+import '../controllers/location_controller.dart';
 import '../utils/colors.dart';
 import '../utils/routes.dart';
 
@@ -33,6 +34,8 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     try {
       final auth = Get.find<AuthController>();
       await auth.restoreSession();
+      // Request location permission silently so it's ready by profile setup
+      Get.find<LocationController>().requestSilently();
       if (!mounted) return;
       if (auth.isLoggedIn) {
         Get.offAllNamed(AppRoutes.home);
