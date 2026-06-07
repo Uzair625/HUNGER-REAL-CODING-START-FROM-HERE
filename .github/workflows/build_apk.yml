@@ -182,15 +182,21 @@ jobs:
         env:
           LANG: en_US.UTF-8
 
-      - name: Build iOS (debug, no codesign)
-        run: flutter build ios --debug --no-codesign --build-number=${{ github.run_number }}
-
-      - name: Package IPA
+      - name: Disable code signing in Xcode project
         run: |
-          mkdir -p Payload
-          cp -r build/ios/iphoneos/Runner.app Payload/Runner.app
-          zip -r HungerPoint-iOS-debug.ipa Payload
-          rm -rf Payload
+          find ios -name "*.pbxproj" -exec sed -i '' \
+            -e 's/DEVELOPMENT_TEAM = [A-Z0-9]*;/DEVELOPMENT_TEAM = "";/g' \
+            -e 's/CODE_SIGN_STYLE = Automatic;/CODE_SIGN_STYLE = Manual;/g' \
+            -e 's/PROVISIONING_PROFILE_SPECIFIER = [^;]*;/PROVISIONING_PROFILE_SPECIFIER = "";/g' \
+            {} \;
+
+      - name: Build iOS IPA (unsigned)
+        run: flutter build ipa --no-codesign --build-number=${{ github.run_number }}
+
+      - name: Rename IPA
+        run: |
+          IPA_PATH=$(find build/ios/ipa -name "*.ipa" | head -1)
+          cp "$IPA_PATH" HungerPoint-iOS-debug.ipa
 
       - name: Get build date
         id: date
