@@ -154,6 +154,27 @@ jobs:
           </plist>
           PLIST
 
+      - name: Fix Generated.xcconfig for macOS paths
+        run: |
+          FLUTTER_ROOT=$(dirname $(dirname $(which flutter)))
+          APP_PATH=$(pwd)
+          echo "// This is a generated file; do not edit or check into version control." > ios/Flutter/Generated.xcconfig
+          echo "FLUTTER_ROOT=$FLUTTER_ROOT"                                             >> ios/Flutter/Generated.xcconfig
+          echo "FLUTTER_APPLICATION_PATH=$APP_PATH"                                     >> ios/Flutter/Generated.xcconfig
+          echo "COCOAPODS_PARALLEL_CODE_SIGN=true"                                      >> ios/Flutter/Generated.xcconfig
+          echo "FLUTTER_TARGET=lib/main.dart"                                           >> ios/Flutter/Generated.xcconfig
+          echo "FLUTTER_BUILD_DIR=build"                                                >> ios/Flutter/Generated.xcconfig
+          echo "FLUTTER_BUILD_NAME=1.0.0"                                               >> ios/Flutter/Generated.xcconfig
+          echo "FLUTTER_BUILD_NUMBER=${{ github.run_number }}"                          >> ios/Flutter/Generated.xcconfig
+          echo "EXCLUDED_ARCHS[sdk=iphonesimulator*]=i386"                              >> ios/Flutter/Generated.xcconfig
+          echo "EXCLUDED_ARCHS[sdk=iphoneos*]=armv7"                                    >> ios/Flutter/Generated.xcconfig
+          echo "DART_OBFUSCATION=false"                                                 >> ios/Flutter/Generated.xcconfig
+          echo "TRACK_WIDGET_CREATION=true"                                             >> ios/Flutter/Generated.xcconfig
+          echo "TREE_SHAKE_ICONS=false"                                                 >> ios/Flutter/Generated.xcconfig
+          echo "PACKAGE_CONFIG=.dart_tool/package_config.json"                         >> ios/Flutter/Generated.xcconfig
+          echo "--- Generated.xcconfig ---"
+          cat ios/Flutter/Generated.xcconfig
+
       - name: Install CocoaPods
         run: |
           cd ios
