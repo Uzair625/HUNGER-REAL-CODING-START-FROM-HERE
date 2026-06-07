@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Android APK + iOS IPA
 
 on:
   push:
@@ -15,31 +15,29 @@ on:
           - release
 
 jobs:
-  build:
+  # ── Android ──────────────────────────────────────────────────────────────────
+  build-android:
+    name: Android APK
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Java 17
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Flutter 3.44.0
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.44.0'
           channel: stable
           cache: true
 
-      - name: Get Flutter dependencies
-        run: flutter pub get
+      - run: flutter pub get
 
-      - name: Analyze code (non-blocking)
+      - name: Analyze (non-blocking)
         run: flutter analyze --no-fatal-infos || true
 
       - name: Build Debug APK
@@ -58,7 +56,7 @@ jobs:
         if: github.event.inputs.build_type != 'release'
         uses: actions/upload-artifact@v4
         with:
-          name: hunger-point-debug-${{ steps.date.outputs.date }}-build${{ github.run_number }}
+          name: hunger-point-android-debug-${{ steps.date.outputs.date }}-build${{ github.run_number }}
           path: build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 14
 
@@ -66,21 +64,131 @@ jobs:
         if: github.event.inputs.build_type == 'release'
         uses: actions/upload-artifact@v4
         with:
-          name: hunger-point-release-${{ steps.date.outputs.date }}-build${{ github.run_number }}
+          name: hunger-point-android-release-${{ steps.date.outputs.date }}-build${{ github.run_number }}
           path: build/app/outputs/flutter-apk/app-release.apk
           retention-days: 30
 
       - name: Build Summary
         run: |
-          echo "## Build Complete ✅" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "## Android Build ✅" >> $GITHUB_STEP_SUMMARY
           echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| App | Hunger Point |" >> $GITHUB_STEP_SUMMARY
-          echo "| Branch | ${{ github.ref_name }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Build # | ${{ github.run_number }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Commit | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Date | ${{ steps.date.outputs.date }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Type | ${{ github.event.inputs.build_type || 'debug' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Date | $(date +'%Y-%m-%d') |" >> $GITHUB_STEP_SUMMARY
+
+  # ── iOS ───────────────────────────────────────────────────────────────────────
+  build-ios:
+    name: iOS IPA (unsigned)
+    runs-on: macos-latest
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.0'
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Generate iOS project structure
+        run: flutter create --platforms=ios . 2>/dev/null || true
+
+      - name: Restore Info.plist with app permissions
+        run: |
+          cat > ios/Runner/Info.plist << 'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>CFBundleDevelopmentRegion</key>
+            <string>$(DEVELOPMENT_LANGUAGE)</string>
+            <key>CFBundleDisplayName</key>
+            <string>Hunger Point</string>
+            <key>CFBundleExecutable</key>
+            <string>$(EXECUTABLE_NAME)</string>
+            <key>CFBundleIdentifier</key>
+            <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+            <key>CFBundleInfoDictionaryVersion</key>
+            <string>6.0</string>
+            <key>CFBundleName</key>
+            <string>hunger_point</string>
+            <key>CFBundlePackageType</key>
+            <string>APPL</string>
+            <key>CFBundleShortVersionString</key>
+            <string>$(FLUTTER_BUILD_NAME)</string>
+            <key>CFBundleSignature</key>
+            <string>????</string>
+            <key>CFBundleVersion</key>
+            <string>$(FLUTTER_BUILD_NUMBER)</string>
+            <key>LSRequiresIPhoneOS</key>
+            <true/>
+            <key>UILaunchStoryboardName</key>
+            <string>LaunchScreen</string>
+            <key>UIMainStoryboardFile</key>
+            <string>Main</string>
+            <key>UISupportedInterfaceOrientations</key>
+            <array>
+              <string>UIInterfaceOrientationPortrait</string>
+              <string>UIInterfaceOrientationLandscapeLeft</string>
+              <string>UIInterfaceOrientationLandscapeRight</string>
+            </array>
+            <key>UIViewControllerBasedStatusBarAppearance</key>
+            <false/>
+            <key>NSLocationWhenInUseUsageDescription</key>
+            <string>Hunger Point uses your location to auto-detect your delivery address and show nearby restaurants.</string>
+            <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+            <string>Hunger Point uses your location to track your order delivery in real time.</string>
+            <key>NSPhotoLibraryUsageDescription</key>
+            <string>Hunger Point needs access to your photos to let you set a profile picture.</string>
+            <key>NSPhotoLibraryAddUsageDescription</key>
+            <string>Hunger Point may save images to your photo library.</string>
+            <key>NSCameraUsageDescription</key>
+            <string>Hunger Point needs camera access to let you take a profile photo.</string>
+            <key>FirebaseAppDelegateProxyEnabled</key>
+            <false/>
+          </dict>
+          </plist>
+          PLIST
+
+      - name: Install CocoaPods
+        run: |
+          cd ios
+          pod install --repo-update
+        env:
+          LANG: en_US.UTF-8
+
+      - name: Build iOS (debug, no codesign)
+        run: flutter build ios --debug --no-codesign --build-number=${{ github.run_number }}
+
+      - name: Package IPA
+        run: |
+          mkdir -p Payload
+          cp -r build/ios/iphoneos/Runner.app Payload/Runner.app
+          zip -r HungerPoint-iOS-debug.ipa Payload
+          rm -rf Payload
+
+      - name: Get build date
+        id: date
+        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: hunger-point-ios-debug-${{ steps.date.outputs.date }}-build${{ github.run_number }}
+          path: HungerPoint-iOS-debug.ipa
+          retention-days: 14
+
+      - name: Build Summary
+        run: |
+          echo "## iOS Build ✅" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Build # | ${{ github.run_number }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Type | debug (unsigned) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Date | $(date +'%Y-%m-%d') |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Download the APK from the **Artifacts** section above." >> $GITHUB_STEP_SUMMARY
+          echo "> Install via **AltStore** or **Sideloadly** using your Apple ID." >> $GITHUB_STEP_SUMMARY

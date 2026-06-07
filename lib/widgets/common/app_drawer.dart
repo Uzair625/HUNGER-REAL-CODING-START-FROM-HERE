@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../controllers/auth_controller.dart';
@@ -19,16 +20,47 @@ class AppDrawer extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
           child: Obx(() {
             final u = auth.user.value;
-            return Row(children: [
-              Container(
+            final photoUrl = u?.photoUrl ?? '';
+            final isGuest = u?.isGuest ?? false;
+            final initial = u?.name.isNotEmpty == true ? u!.name[0].toUpperCase() : '?';
+
+            Widget avatar;
+            if (!isGuest && photoUrl.isNotEmpty) {
+              avatar = CachedNetworkImage(
+                imageUrl: photoUrl,
+                imageBuilder: (_, provider) => Container(
+                  width: 58, height: 58,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    image: DecorationImage(image: provider, fit: BoxFit.cover),
+                  ),
+                ),
+                placeholder: (_, __) => Container(
+                  width: 58, height: 58,
+                  decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
+                  child: const Center(child: SizedBox(width: 22, height: 22,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))),
+                ),
+                errorWidget: (_, __, ___) => Container(
+                  width: 58, height: 58,
+                  decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
+                  child: Center(child: Text(initial,
+                    style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w700, color: Colors.white))),
+                ),
+              );
+            } else {
+              avatar = Container(
                 width: 58, height: 58,
                 decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle),
                 child: Center(child: Text(
-                  u?.isGuest == true ? '👤'
-                    : (u?.name.isNotEmpty == true ? u!.name[0].toUpperCase() : '?'),
-                  style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w700),
+                  isGuest ? '👤' : initial,
+                  style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w700, color: Colors.white),
                 )),
-              ),
+              );
+            }
+
+            return Row(children: [
+              avatar,
               const SizedBox(width: 12),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(
