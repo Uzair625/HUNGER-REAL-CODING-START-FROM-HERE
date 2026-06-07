@@ -31,8 +31,13 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Inject google-services.json
-        run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
+      - name: Inject google-services.json (from secret if set, else use committed file)
+        run: |
+          if [ -n '${{ secrets.GOOGLE_SERVICES_JSON }}' ]; then
+            echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
+          else
+            echo "Using committed google-services.json"
+          fi
 
       - run: flutter pub get
 
@@ -62,8 +67,13 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Inject google-services.json
-        run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
+      - name: Inject google-services.json (from secret if set, else use committed file)
+        run: |
+          if [ -n '${{ secrets.GOOGLE_SERVICES_JSON }}' ]; then
+            echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
+          else
+            echo "Using committed google-services.json"
+          fi
 
       - run: flutter pub get
 
@@ -124,8 +134,13 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Inject google-services.json
-        run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
+      - name: Inject google-services.json (from secret if set, else use committed file)
+        run: |
+          if [ -n '${{ secrets.GOOGLE_SERVICES_JSON }}' ]; then
+            echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
+          else
+            echo "Using committed google-services.json"
+          fi
 
       - run: flutter pub get
 
@@ -172,8 +187,13 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Inject google-services.json
-        run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
+      - name: Inject google-services.json (from secret if set, else use committed file)
+        run: |
+          if [ -n '${{ secrets.GOOGLE_SERVICES_JSON }}' ]; then
+            echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
+          else
+            echo "Using committed google-services.json"
+          fi
 
       - run: flutter pub get
 
@@ -362,8 +382,13 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Inject google-services.json
-        run: echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
+      - name: Inject google-services.json (from secret if set, else use committed file)
+        run: |
+          if [ -n '${{ secrets.GOOGLE_SERVICES_JSON }}' ]; then
+            echo '${{ secrets.GOOGLE_SERVICES_JSON }}' > android/app/google-services.json
+          else
+            echo "Using committed google-services.json"
+          fi
 
       - run: flutter pub get
 
