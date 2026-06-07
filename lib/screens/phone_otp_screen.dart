@@ -34,6 +34,23 @@ class _PhoneOtpScreenState extends State<PhoneOtpScreen> with CodeAutoFill {
     super.initState();
     _startTimer();
     _startSmsListening();
+    _setupBackspaceHandlers();
+  }
+
+  void _setupBackspaceHandlers() {
+    for (int i = 0; i < 6; i++) {
+      final index = i;
+      _nodes[index].onKeyEvent = (node, event) {
+        if (event is KeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.backspace &&
+            _boxes[index].text.isEmpty &&
+            index > 0) {
+          _nodes[index - 1].requestFocus();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      };
+    }
   }
 
   Future<void> _startSmsListening() async {

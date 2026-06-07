@@ -89,7 +89,23 @@ class AuthController extends GetxController {
           },
           verificationFailed: (e) {
             isLoading.value = false;
-            _snap('Error', e.message ?? 'Verification failed', err: true);
+            debugPrint('🔴 verificationFailed [${e.code}]: ${e.message}');
+            String msg;
+            switch (e.code) {
+              case 'app-not-authorized':
+                msg = 'App not authorized. SHA-1 not registered in Firebase.'; break;
+              case 'billing-not-enabled':
+                msg = 'Upgrade Firebase project to Blaze plan to send real OTPs.'; break;
+              case 'invalid-phone-number':
+                msg = 'Invalid phone number. Use format 03XX-XXXXXXX.'; break;
+              case 'too-many-requests':
+                msg = 'Too many attempts. Try again in a few minutes.'; break;
+              case 'quota-exceeded':
+                msg = 'SMS quota exceeded for today.'; break;
+              default:
+                msg = '[${e.code}] ${e.message ?? 'Verification failed'}';
+            }
+            _snap('OTP Error', msg, err: true);
           },
           codeSent: (verId, _) {
             verificationId.value = verId;
@@ -206,6 +222,7 @@ class AuthController extends GetxController {
     required String dob,
     String address = '',
     Uint8List? avatarBytes,
+    bool redirectHome = true,
   }) async {
     if (user.value == null || isGuest) return;
     isLoading.value = true;
@@ -241,7 +258,7 @@ class AuthController extends GetxController {
       user.value = updated;
       await _savePrefs(updated);
       _snap('Saved!', 'Profile updated successfully');
-      Get.offAllNamed(AppRoutes.home);
+      if (redirectHome) Get.offAllNamed(AppRoutes.home);
     } catch (e) {
       debugPrint('🔴 updateProfile error: $e');
       _snap('Error', 'Could not update profile. Try again.', err: true);

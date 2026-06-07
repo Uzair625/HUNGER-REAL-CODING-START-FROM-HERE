@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -100,39 +101,51 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             const SizedBox(height: 24),
 
             // ── Avatar picker ─────────────────────────────────────────
-            GestureDetector(
-              onTap: _saving ? null : _pickImage,
-              child: Stack(children: [
-                Container(
-                  width: 100, height: 100,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.primary,
-                    boxShadow: [BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.35),
-                      blurRadius: 24, offset: const Offset(0, 8))],
-                    image: _avatarBytes != null
-                      ? DecorationImage(image: MemoryImage(_avatarBytes!), fit: BoxFit.cover)
+            Builder(builder: (context) {
+              final existingUrl = Get.find<AuthController>().user.value?.photoUrl ?? '';
+              final hasExisting = existingUrl.isNotEmpty;
+              return GestureDetector(
+                onTap: _saving ? null : _pickImage,
+                child: Stack(children: [
+                  Container(
+                    width: 100, height: 100,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.primary,
+                      boxShadow: [BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.35),
+                        blurRadius: 24, offset: const Offset(0, 8))],
+                      image: _avatarBytes != null
+                        ? DecorationImage(image: MemoryImage(_avatarBytes!), fit: BoxFit.cover)
+                        : null,
+                    ),
+                    child: _avatarBytes == null
+                      ? hasExisting
+                        ? ClipOval(child: CachedNetworkImage(
+                            imageUrl: existingUrl,
+                            fit: BoxFit.cover,
+                            width: 100, height: 100,
+                            errorWidget: (_, __, ___) =>
+                              const Icon(Icons.person_rounded, color: Colors.white, size: 50),
+                          ))
+                        : const Icon(Icons.person_rounded, color: Colors.white, size: 50)
                       : null,
                   ),
-                  child: _avatarBytes == null
-                    ? const Icon(Icons.person_rounded, color: Colors.white, size: 50)
-                    : null,
-                ),
-                Positioned(
-                  bottom: 0, right: 0,
-                  child: Container(
-                    width: 30, height: 30,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.primary, width: 2),
+                  Positioned(
+                    bottom: 0, right: 0,
+                    child: Container(
+                      width: 30, height: 30,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.primary, width: 2),
+                      ),
+                      child: const Icon(Icons.camera_alt_rounded, size: 16, color: AppColors.primary),
                     ),
-                    child: const Icon(Icons.camera_alt_rounded, size: 16, color: AppColors.primary),
                   ),
-                ),
-              ]),
-            ),
+                ]),
+              );
+            }),
             const SizedBox(height: 8),
             Text(
               _avatarBytes != null ? 'Photo selected ✓' : 'Tap to upload photo',
@@ -164,11 +177,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             // ── Email ─────────────────────────────────────────────────
             _Field(
               controller: _emailCtrl,
-              hint: 'Email Address (optional)',
+              hint: 'Email Address',
               icon: Icons.email_rounded,
               keyboard: TextInputType.emailAddress,
               validator: (v) {
-                if (v == null || v.trim().isEmpty) return null;
+                if (v == null || v.trim().isEmpty) return 'Email is required';
                 if (!v.contains('@') || !v.contains('.')) return 'Enter a valid email';
                 return null;
               },

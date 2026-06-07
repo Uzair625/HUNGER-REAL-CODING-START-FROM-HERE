@@ -112,33 +112,40 @@ class _AvatarWidgetState extends State<_AvatarWidget> {
     if (file == null) return;
     final bytes = await file.readAsBytes();
     setState(() => _newBytes = bytes);
-    // Immediately save the new photo to Firestore/Storage
+    // Save photo without navigating away — user is on profile screen
     await Get.find<AuthController>().updateProfile(
-      name:        widget.u.name,
-      email:       widget.u.email,
-      dob:         widget.u.dob,
-      address:     widget.u.address,
-      avatarBytes: bytes,
+      name:         widget.u.name,
+      email:        widget.u.email,
+      dob:          widget.u.dob,
+      address:      widget.u.address,
+      avatarBytes:  bytes,
+      redirectHome: false,
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final u = widget.u;
-    final hasPhoto = _newBytes != null || u.photoUrl.isNotEmpty;
 
     Widget avatar;
     if (_newBytes != null) {
       avatar = CircleAvatar(radius: 45, backgroundImage: MemoryImage(_newBytes!));
     } else if (u.photoUrl.isNotEmpty) {
-      avatar = CircleAvatar(
-        radius: 45,
-        backgroundImage: CachedNetworkImageProvider(u.photoUrl),
-        backgroundColor: AppColors.primary,
-        child: !hasPhoto
-          ? Text(u.name.isNotEmpty ? u.name[0].toUpperCase() : '?',
-              style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: Colors.white))
-          : null,
+      avatar = CachedNetworkImage(
+        imageUrl: u.photoUrl,
+        imageBuilder: (_, provider) => CircleAvatar(radius: 45, backgroundImage: provider),
+        placeholder: (_, __) => const CircleAvatar(
+          radius: 45,
+          backgroundColor: AppColors.primary,
+          child: SizedBox(width: 24, height: 24,
+            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+        ),
+        errorWidget: (_, __, ___) => CircleAvatar(
+          radius: 45,
+          backgroundColor: AppColors.primary,
+          child: Text(u.name.isNotEmpty ? u.name[0].toUpperCase() : '?',
+            style: const TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: Colors.white)),
+        ),
       );
     } else {
       avatar = CircleAvatar(
@@ -273,10 +280,11 @@ class _EditForm extends StatelessWidget {
         onPressed: auth.isLoading.value ? null : () async {
           if (!auth.profileFormKey.currentState!.validate()) return;
           await auth.updateProfile(
-            name:    auth.nameCtrl.text.trim(),
-            email:   auth.emailCtrl.text.trim(),
-            dob:     auth.dobCtrl.text.trim(),
-            address: auth.addressCtrl.text.trim(),
+            name:         auth.nameCtrl.text.trim(),
+            email:        auth.emailCtrl.text.trim(),
+            dob:          auth.dobCtrl.text.trim(),
+            address:      auth.addressCtrl.text.trim(),
+            redirectHome: false,
           );
           onSave();
         },

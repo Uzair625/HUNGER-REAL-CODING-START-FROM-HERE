@@ -17,9 +17,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   @override
   void initState() {
     super.initState();
-    _waveCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1400))
+    _waveCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1800))
       ..forward();
-    _logoCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 900))
+    _logoCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))
       ..forward();
     _waveAnim  = CurvedAnimation(parent: _waveCtrl, curve: Curves.easeInOut);
     _fadeAnim  = CurvedAnimation(parent: _logoCtrl, curve: Curves.easeIn);
@@ -29,7 +29,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   }
 
   Future<void> _navigate() async {
-    await Future.delayed(const Duration(seconds: 2));
+    await Future.delayed(const Duration(seconds: 4));
     if (!mounted) return;
     try {
       final auth = Get.find<AuthController>();
