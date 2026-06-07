@@ -1,4 +1,4 @@
-name: hunger_point
+﻿name: hunger_point
 description: Hunger Point - Fast & Fresh Food Delivery
 publish_to: 'none'
 version: 1.0.0+1
@@ -37,7 +37,7 @@ dependencies:
   sms_autofill: ^2.3.0
 
   # Location
-  geocoding: ^3.0.0
+  geocoding: ^4.0.0
 
 dev_dependencies:
   flutter_test:
@@ -67,7 +67,7 @@ flutter:
     - assets/images/deals/
     - assets/fonts/
 
-  # fonts: (Poppins .ttf files not yet added to assets/fonts/ — add them to re-enable)
+  # fonts: (Poppins .ttf files not yet added to assets/fonts/ â€” add them to re-enable)
   #   - family: Poppins
   #     fonts:
   #       - asset: assets/fonts/Poppins-Regular.ttf
@@ -77,3 +77,4 @@ flutter:
   #         weight: 600
   #       - asset: assets/fonts/Poppins-Bold.ttf
   #         weight: 700
+
