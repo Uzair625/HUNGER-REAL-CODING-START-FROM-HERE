@@ -112,7 +112,7 @@ class AppDrawer extends StatelessWidget {
               style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size.zero, tapTargetSize: MaterialTapTargetSize.shrinkWrap),
               child: const Text('Terms & Conditions', style: TextStyle(fontSize:11, color:AppColors.accent)),
             ),
-            Text('v${AppConstants.appVersion}', style: const TextStyle(fontFamily:'Poppins', fontSize:11, color:AppColors.textLight)),
+            const Text('v${AppConstants.appVersion}', style: TextStyle(fontFamily:'Poppins', fontSize:11, color:AppColors.textLight)),
           ]),
         ),
       ])),

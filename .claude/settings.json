@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "u\\.p\\.a\\.r",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -ExecutionPolicy Bypass -File \"d:\\HUNGER POINT APP EN TO EN\\PERFECT ONE APP HUNGER POINT\\hunger_point_full\\upar.ps1\"",
+            "timeout": 120,
+            "statusMessage": "Running u.p.a.r — committing, pushing, and triggering APK rebuild..."
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -39,10 +39,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     setState(() => _saving = true);
     try {
       await Get.find<AuthController>().updateProfile(
-        name:    _nameCtrl.text.trim(),
-        email:   _emailCtrl.text.trim(),
-        dob:     '',
-        address: _addressCtrl.text.trim(),
+        name:        _nameCtrl.text.trim(),
+        email:       _emailCtrl.text.trim(),
+        dob:         '',
+        address:     _addressCtrl.text.trim(),
+        avatarBytes: _avatarBytes,
       );
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -70,7 +71,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
             // Avatar picker
             GestureDetector(
-              onTap: _pickImage,
+              onTap: _saving ? null : _pickImage,
               child: Stack(children: [
                 Container(
                   width: 100, height: 100,
@@ -102,12 +103,15 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             ),
 
             const SizedBox(height: 10),
-            const Text('Tap to upload photo',
-              style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: AppColors.textSecondary)),
+            Text(
+              _avatarBytes != null ? 'Photo selected ✓' : 'Tap to upload photo',
+              style: TextStyle(
+                fontFamily: 'Poppins', fontSize: 12,
+                color: _avatarBytes != null ? AppColors.success : AppColors.textSecondary),
+            ),
 
             const SizedBox(height: 32),
 
-            // Name
             _Field(
               controller: _nameCtrl,
               hint: 'Full Name',
@@ -116,10 +120,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             ),
             const SizedBox(height: 14),
 
-            // Email
             _Field(
               controller: _emailCtrl,
-              hint: 'Email Address',
+              hint: 'Email Address (optional)',
               icon: Icons.email_rounded,
               keyboard: TextInputType.emailAddress,
               validator: (v) {
@@ -130,7 +133,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             ),
             const SizedBox(height: 14),
 
-            // Address
             _Field(
               controller: _addressCtrl,
               hint: 'Delivery Address',
@@ -141,7 +143,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
             const SizedBox(height: 36),
 
-            // Continue button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -154,8 +155,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 ),
                 onPressed: _saving ? null : _continue,
                 child: _saving
-                  ? const SizedBox(width: 22, height: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
+                  ? const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white)),
+                      SizedBox(width: 10),
+                      Text('Saving...', style: TextStyle(fontFamily: 'Poppins', fontSize: 14, color: Colors.white)),
+                    ])
                   : const Text('Continue',
                       style: TextStyle(fontFamily: 'Poppins', fontSize: 16, fontWeight: FontWeight.w700)),
               ),
@@ -164,7 +168,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             const SizedBox(height: 16),
 
             TextButton(
-              onPressed: () => Get.find<AuthController>().goHome(),
+              onPressed: _saving ? null : () => Get.find<AuthController>().goHome(),
               child: const Text('Skip for now',
                 style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: AppColors.textSecondary)),
             ),

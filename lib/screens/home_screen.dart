@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -36,8 +37,10 @@ class HomeScreen extends StatelessWidget {
               color: AppColors.accent,
               onRefresh: () async => menu.onInit(),
               child: CustomScrollView(slivers: [
-                // Promo banner
-                SliverToBoxAdapter(child: _PromoBanner()),
+                // Promo banners (auto-scroll)
+                SliverToBoxAdapter(child: Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: _PromoBanner())),
 
                 // Explore Menu header
                 SliverToBoxAdapter(child: _SectionHeader(title: 'Explore Menu', onViewAll: () => Get.toNamed(AppRoutes.explore))),
@@ -150,7 +153,7 @@ class _TopBar extends StatelessWidget {
             width: 44, height: 44,
             decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle,
               border: Border.all(color: AppColors.divider),
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)]),
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8)]),
             child: const Icon(Icons.shopping_cart_outlined, color: AppColors.textPrimary),
           ),
           if (cart.count > 0) Positioned(right: -2, top: -2,
@@ -198,44 +201,160 @@ class _SectionHeader extends StatelessWidget {
   );
 }
 
-class _PromoBanner extends StatelessWidget {
+class _PromoBanner extends StatefulWidget {
+  @override State<_PromoBanner> createState() => _PromoBannerState();
+}
+
+class _PromoBannerState extends State<_PromoBanner> {
+  final _ctrl = PageController();
+  int _current = 0;
+  Timer? _timer;
+
+  static const _banners = [
+    _BannerData(
+      tag: 'HUNGER POINT SPECIAL',
+      title: '🔥 Make Your Own Deal',
+      subtitle: '10% OFF on orders above Rs. 4,000',
+      btnText: 'Order Now',
+      emoji: '🍔',
+      colors: [Color(0xFFCC0020), Color(0xFFFF6B6B)],
+      btnColor: Color(0xFFCC0020),
+    ),
+    _BannerData(
+      tag: 'NEW ARRIVAL',
+      title: '🍔 Zinger Tower Burger',
+      subtitle: 'Double stacked • Extra sauce • Rs. 550',
+      btnText: 'Try Now',
+      emoji: '🍟',
+      colors: [Color(0xFF1A1A2E), Color(0xFF16213E)],
+      btnColor: Color(0xFFE31837),
+    ),
+    _BannerData(
+      tag: 'LIMITED TIME OFFER',
+      title: '🍕 Free Delivery Today!',
+      subtitle: 'On all pizza orders above Rs. 1,000',
+      btnText: 'Grab Deal',
+      emoji: '🍕',
+      colors: [Color(0xFFFF6B00), Color(0xFFFFB347)],
+      btnColor: Color(0xFFFF6B00),
+    ),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (!mounted) return;
+      final next = (_current + 1) % _banners.length;
+      _ctrl.animateToPage(next,
+        duration: const Duration(milliseconds: 500), curve: Curves.easeInOut);
+    });
+  }
+
+  @override
+  void dispose() { _timer?.cancel(); _ctrl.dispose(); super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) {
+    final w = MediaQuery.of(context).size.width;
+    final h = (w * 0.28).clamp(160.0, 210.0);
+    return Column(children: [
+      SizedBox(
+        height: h,
+        child: PageView.builder(
+          controller: _ctrl,
+          onPageChanged: (i) => setState(() => _current = i),
+          itemCount: _banners.length,
+          itemBuilder: (_, i) => _BannerSlide(data: _banners[i], height: h),
+        ),
+      ),
+      const SizedBox(height: 10),
+      Row(mainAxisAlignment: MainAxisAlignment.center, children: List.generate(
+        _banners.length, (i) => AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          width: _current == i ? 20 : 7,
+          height: 7,
+          decoration: BoxDecoration(
+            color: _current == i ? AppColors.primary : AppColors.divider,
+            borderRadius: BorderRadius.circular(4)),
+        ),
+      )),
+    ]);
+  }
+}
+
+class _BannerData {
+  final String tag, title, subtitle, btnText, emoji;
+  final List<Color> colors;
+  final Color btnColor;
+  const _BannerData({
+    required this.tag, required this.title, required this.subtitle,
+    required this.btnText, required this.emoji, required this.colors,
+    required this.btnColor,
+  });
+}
+
+class _BannerSlide extends StatelessWidget {
+  final _BannerData data;
+  final double height;
+  const _BannerSlide({required this.data, required this.height});
+
   @override
   Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-    height: 155,
+    margin: const EdgeInsets.fromLTRB(12, 0, 12, 0),
+    height: height,
     decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(16),
-      gradient: const LinearGradient(
-        colors: [Color(0xFFE31837), Color(0xFFFF6B6B)],
-        begin: Alignment.topLeft, end: Alignment.bottomRight),
+      borderRadius: BorderRadius.circular(20),
+      gradient: LinearGradient(colors: data.colors, begin: Alignment.topLeft, end: Alignment.bottomRight),
+      boxShadow: [BoxShadow(color: data.colors.first.withValues(alpha: 0.4), blurRadius: 16, offset: const Offset(0, 6))],
     ),
-    child: Stack(children: [
-      Positioned(right: -20, top: -20, child: Container(
-        width: 130, height: 130,
-        decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withOpacity(0.08)),
-      )),
-      Positioned(right: 14, top: 10, child: const Text('🍕', style: TextStyle(fontSize: 70))),
-      Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.center, children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(6)),
-            child: const Text('HUNGER POINT SPECIAL', style: TextStyle(fontFamily:'Poppins', fontSize:8, fontWeight:FontWeight.w700, color:AppColors.textOnPrimary, letterSpacing:0.5)),
-          ),
-          const SizedBox(height: 8),
-          const Text('🔥 Make Your Own Deal', style: TextStyle(fontFamily:'Poppins', fontSize:17, fontWeight:FontWeight.w800, color:Colors.white)),
-          const SizedBox(height: 4),
-          const Text('10% OFF on orders above Rs. 4,000', style: TextStyle(fontFamily:'Poppins', fontSize:12, color:Colors.white70)),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
-            child: const Text('Order Now →', style: TextStyle(fontFamily:'Poppins', fontSize:12, fontWeight:FontWeight.w700, color:AppColors.accent)),
-          ),
-        ]),
-      ),
-    ]),
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: Stack(children: [
+        // Circles
+        Positioned(right: -30, top: -30, child: Container(
+          width: 160, height: 160,
+          decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.06)))),
+        Positioned(left: -20, bottom: -30, child: Container(
+          width: 100, height: 100,
+          decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white.withValues(alpha: 0.04)))),
+
+        // Emoji
+        Positioned(right: 12, top: 0, bottom: 0,
+          child: Center(child: Text(data.emoji, style: TextStyle(fontSize: height * 0.50)))),
+
+        // Text
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 140, 0),
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(6)),
+              child: Text(data.tag,
+                style: const TextStyle(fontFamily: 'Poppins', fontSize: 9, fontWeight: FontWeight.w700,
+                  color: Colors.white, letterSpacing: 0.8)),
+            ),
+            const SizedBox(height: 8),
+            Text(data.title,
+              style: const TextStyle(fontFamily: 'Poppins', fontSize: 17, fontWeight: FontWeight.w800, color: Colors.white)),
+            const SizedBox(height: 4),
+            Text(data.subtitle,
+              style: const TextStyle(fontFamily: 'Poppins', fontSize: 11, color: Colors.white70, height: 1.4)),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 8, offset: const Offset(0, 3))]),
+              child: Text('${data.btnText} →',
+                style: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.w700, color: data.btnColor)),
+            ),
+          ]),
+        ),
+      ]),
+    ),
   );
 }
 
@@ -258,7 +377,7 @@ class _CategoryTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white, borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.divider),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6, offset: const Offset(0, 2))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6, offset: const Offset(0, 2))],
       ),
       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
         Text(_emoji[category] ?? '🍴', style: const TextStyle(fontSize: 36)),

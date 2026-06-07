@@ -4,10 +4,20 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build type (debug or release)'
+        required: false
+        default: 'debug'
+        type: choice
+        options:
+          - debug
+          - release
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout code
@@ -19,22 +29,58 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Set up Flutter
+      - name: Set up Flutter 3.44.0
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.44.0'
           channel: stable
           cache: true
 
-      - name: Get dependencies
+      - name: Get Flutter dependencies
         run: flutter pub get
 
-      - name: Build debug APK
-        run: flutter build apk --debug
+      - name: Analyze code (non-blocking)
+        run: flutter analyze --no-fatal-infos || true
 
-      - name: Upload APK artifact
+      - name: Build Debug APK
+        if: github.event.inputs.build_type != 'release'
+        run: flutter build apk --debug --build-number=${{ github.run_number }}
+
+      - name: Build Release APK
+        if: github.event.inputs.build_type == 'release'
+        run: flutter build apk --release --build-number=${{ github.run_number }}
+
+      - name: Get build date
+        id: date
+        run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+
+      - name: Upload Debug APK
+        if: github.event.inputs.build_type != 'release'
         uses: actions/upload-artifact@v4
         with:
-          name: hunger-point-debug-apk
+          name: hunger-point-debug-${{ steps.date.outputs.date }}-build${{ github.run_number }}
           path: build/app/outputs/flutter-apk/app-debug.apk
-          retention-days: 7
+          retention-days: 14
+
+      - name: Upload Release APK
+        if: github.event.inputs.build_type == 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: hunger-point-release-${{ steps.date.outputs.date }}-build${{ github.run_number }}
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
+
+      - name: Build Summary
+        run: |
+          echo "## Build Complete ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| App | Hunger Point |" >> $GITHUB_STEP_SUMMARY
+          echo "| Branch | ${{ github.ref_name }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build # | ${{ github.run_number }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Date | ${{ steps.date.outputs.date }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Type | ${{ github.event.inputs.build_type || 'debug' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Download the APK from the **Artifacts** section above." >> $GITHUB_STEP_SUMMARY

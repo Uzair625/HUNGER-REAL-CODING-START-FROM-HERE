@@ -29,8 +29,9 @@ class FoodMenuController extends GetxController {
 
   void _applyFilters() {
     var r = allItems.toList();
-    if (selectedCategory.value != 'All')
+    if (selectedCategory.value != 'All') {
       r = r.where((i) => i.category == selectedCategory.value).toList();
+    }
     if (searchQuery.value.isNotEmpty) {
       final q = searchQuery.value.toLowerCase();
       r = r.where((i) => i.name.toLowerCase().contains(q) ||

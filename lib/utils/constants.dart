@@ -17,6 +17,7 @@ class AppConstants {
   static const String prefUserEmail   = 'user_email';
   static const String prefUserDob     = 'user_dob';
   static const String prefUserAddress = 'user_address';
+  static const String prefUserPhoto   = 'user_photo';
   static const String prefOnboarded   = 'onboarded';
 
   // Auth modes

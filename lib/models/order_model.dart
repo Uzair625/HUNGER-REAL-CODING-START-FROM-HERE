@@ -30,6 +30,7 @@ class OrderModel {
   final List<OrderItemSnapshot> items;
   final double subtotal, deliveryFee, discount, total;
   final DateTime createdAt;
+  final double? latitude, longitude;
 
   OrderModel({
     required this.id, required this.userId, required this.customerPhone,
@@ -37,7 +38,13 @@ class OrderModel {
     required this.paymentMethod, required this.status,
     required this.items, required this.subtotal, required this.deliveryFee,
     required this.discount, required this.total, required this.createdAt,
+    this.latitude, this.longitude,
   });
+
+  bool get hasLocation => latitude != null && longitude != null;
+  String get googleMapsUrl => hasLocation
+      ? 'https://www.google.com/maps?q=$latitude,$longitude'
+      : '';
 
   String get statusLabel {
     switch (status) {
@@ -58,6 +65,8 @@ class OrderModel {
     'subtotal': subtotal, 'deliveryFee': deliveryFee,
     'discount': discount, 'total': total,
     'createdAt': Timestamp.fromDate(createdAt),
+    if (latitude != null) 'latitude': latitude,
+    if (longitude != null) 'longitude': longitude,
   };
 
   factory OrderModel.fromMap(Map<String, dynamic> d) => OrderModel(
@@ -76,5 +85,7 @@ class OrderModel {
     discount: (d['discount'] ?? 0).toDouble(),
     total: (d['total'] ?? 0).toDouble(),
     createdAt: (d['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+    latitude: d['latitude']?.toDouble(),
+    longitude: d['longitude']?.toDouble(),
   );
 }

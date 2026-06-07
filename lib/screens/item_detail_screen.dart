@@ -96,7 +96,9 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
                 ),
                 onPressed: () {
                   final cart = Get.find<CartController>();
-                  for (int i = 0; i < _qty; i++) cart.addItem(widget.item, size: _selectedSize);
+                  for (int i = 0; i < _qty; i++) {
+                    cart.addItem(widget.item, size: _selectedSize);
+                  }
                   Get.back();
                   Get.back();
                 },
@@ -193,8 +195,8 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
               if (item.isFeatured)
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(color: AppColors.accent.withOpacity(0.12), borderRadius: BorderRadius.circular(20)),
-                  child: Text('⭐ Popular Choice', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.accent)),
+                  decoration: BoxDecoration(color: AppColors.accent.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(20)),
+                  child: const Text('⭐ Popular Choice', style: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.accent)),
                 ),
             ]),
           ),
@@ -205,7 +207,7 @@ class _ItemDetailScreenState extends State<ItemDetailScreen> {
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
           decoration: BoxDecoration(
             color: Colors.white,
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 16, offset: const Offset(0, -4))],
+            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 16, offset: const Offset(0, -4))],
           ),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             // Add to Cart

@@ -30,7 +30,7 @@ class AuthScreen extends StatelessWidget {
               width: 130, height: 130,
               decoration: BoxDecoration(shape: BoxShape.circle,
                 gradient: const LinearGradient(colors: [Color(0xFFFFE5E5), Color(0xFFFFB3B3)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-                boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.3), blurRadius: 20, offset: const Offset(0,8))]),
+                boxShadow: [BoxShadow(color: AppColors.primary.withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0,8))]),
               child: const Center(child: Text('🍔', style: TextStyle(fontSize: 68))),
             ),
             const SizedBox(height: 24),
@@ -69,7 +69,7 @@ class AuthScreen extends StatelessWidget {
       width: 44, height: 44,
       decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.white,
         border: Border.all(color: AppColors.divider),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8)]),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8)]),
       child: Icon(icon, color: color, size: 22),
     ),
   );

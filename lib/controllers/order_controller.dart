@@ -29,11 +29,9 @@ class OrderController extends GetxController {
       _listenOrders(auth.user.value!.uid);
     }
     ever(auth.user, (u) {
-      if (u != null && !(u.isGuest)) {
+      if (u != null && !u.isGuest) {
         deliveryAddress.value = u.address;
         _listenOrders(u.uid);
-      } else {
-        orders.clear();
       }
     });
   }
@@ -53,13 +51,6 @@ class OrderController extends GetxController {
   Future<void> placeOrder(List<CartItemModel> cartItems, CartController cart) async {
     final auth = Get.find<AuthController>();
 
-    if (auth.isGuest) {
-      Get.snackbar('Login Required', 'Please login to place an order',
-          backgroundColor: Colors.orange, colorText: Colors.white,
-          snackPosition: SnackPosition.BOTTOM, margin: const EdgeInsets.all(16));
-      return;
-    }
-
     if (deliveryAddress.value.trim().isEmpty) {
       Get.snackbar('Address Required', 'Please enter your delivery address',
           backgroundColor: Colors.orange, colorText: Colors.white,
@@ -69,13 +60,13 @@ class OrderController extends GetxController {
 
     isPlacing.value = true;
     try {
-      final user = auth.user.value!;
+      final user = auth.user.value;
       final id = const Uuid().v4();
       final order = OrderModel(
         id: id,
-        userId: user.uid,
-        customerPhone: user.phone,
-        customerName: user.name.isEmpty ? 'Customer' : user.name,
+        userId: user?.uid ?? 'guest_${id.substring(0, 8)}',
+        customerPhone: user?.phone ?? '',
+        customerName: user == null || user.name.isEmpty ? 'Guest Customer' : user.name,
         deliveryAddress: deliveryAddress.value.trim(),
         paymentMethod: selectedPayment.value,
         status: AppConstants.statusPlaced,

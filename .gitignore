@@ -48,4 +48,7 @@ app.*.map.json
 ios/Runner/GoogleService-Info.plist
 android/local.properties
 *.keystore
+
+# Claude Code local settings (personal overrides, not for team)
+.claude/settings.local.json
 *.jks

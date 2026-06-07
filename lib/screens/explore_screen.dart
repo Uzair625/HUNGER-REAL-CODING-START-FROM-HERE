@@ -66,7 +66,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                       color: selected ? AppColors.accent : Colors.white,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(color: selected ? AppColors.accent : AppColors.divider, width: 1.5),
-                      boxShadow: selected ? [BoxShadow(color: AppColors.accent.withOpacity(0.3), blurRadius: 6, offset: const Offset(0, 2))] : [],
+                      boxShadow: selected ? [BoxShadow(color: AppColors.accent.withValues(alpha: 0.3), blurRadius: 6, offset: const Offset(0, 2))] : [],
                     ),
                     child: Text(cat, style: TextStyle(
                       fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.w600,
