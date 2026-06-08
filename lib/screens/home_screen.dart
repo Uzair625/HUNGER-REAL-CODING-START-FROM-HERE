@@ -10,24 +10,30 @@ import '../utils/routes.dart';
 import '../widgets/common/app_drawer.dart';
 import '../widgets/home/menu_item_card.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   Widget build(BuildContext context) {
     final menu = Get.find<FoodMenuController>();
     final cart = Get.find<CartController>();
-    final scaffoldKey = GlobalKey<ScaffoldState>();
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(statusBarColor: Colors.transparent, statusBarIconBrightness: Brightness.dark),
       child: Scaffold(
-        key: scaffoldKey,
+        key: _scaffoldKey,
         backgroundColor: AppColors.background,
         drawer: const AppDrawer(),
         body: SafeArea(child: Column(children: [
           // Top bar
-          _TopBar(scaffoldKey: scaffoldKey, cart: cart),
+          _TopBar(scaffoldKey: _scaffoldKey, cart: cart),
           // Delivery selector
           _DeliveryBar(),
           // Body
